@@ -9,14 +9,17 @@
 let secretNumber = Math.floor(Math.random() * 20) + 1;
 let score = 20;
 let highscore = 0;
-let gameWon = false;
+
+const displayMessage = function (message) {
+  document.querySelector('.message').textContent = message;
+};
+
 document.querySelector('.check').addEventListener('click', () => {
   const guess = Number(document.querySelector('.guess').value);
   console.log(guess, typeof guess);
   //when there is no input
   if (!guess) {
-    document.querySelector('.message').textContent =
-      'Please type a number in the field! ❗';
+    displayMessage('Please type a number in the field! ❗');
     //when guess is out of range
   } else if (guess > 20 || guess <= 0) {
     document.querySelector('.message').textContent =
@@ -35,9 +38,12 @@ document.querySelector('.check').addEventListener('click', () => {
       highscore = score;
       document.querySelector('.highscore').textContent = highscore;
     }
-  } else if (guess > secretNumber) {
+  } else if (guess !== secretNumber) {
     if (score > 1) {
-      document.querySelector('.message').textContent = 'Your guess is too high';
+      document.querySelector('.message').textContent =
+        guess > secretNumber
+          ? 'Your guess is too high'
+          : 'Your guess is too low';
       score--;
       document.querySelector('.score').textContent = score;
     } else {
@@ -45,10 +51,20 @@ document.querySelector('.check').addEventListener('click', () => {
         'You ran out of guesses, Game Over! 😨';
       document.querySelector('.score').textContent = 0;
     }
-  } else if (guess < secretNumber) {
-    document.querySelector('.message').textContent = 'Your guess is too low';
-    score--;
-    document.querySelector('.score').textContent = score;
+    //   } else if (guess > secretNumber) {
+    //     if (score > 1) {
+    //       document.querySelector('.message').textContent = 'Your guess is too high';
+    //       score--;
+    //       document.querySelector('.score').textContent = score;
+    //     } else {
+    //       document.querySelector('.message').textContent =
+    //         'You ran out of guesses, Game Over! 😨';
+    //       document.querySelector('.score').textContent = 0;
+    //     }
+    //   } else if (guess < secretNumber) {
+    //     document.querySelector('.message').textContent = 'Your guess is too low';
+    //     score--;
+    //     document.querySelector('.score').textContent = score;
   } else if (guess > 20 || guess <= 0) {
     document.querySelector('.message').textContent =
       'Please choose a number between 0 and 20 💥';
