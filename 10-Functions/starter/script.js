@@ -31,7 +31,7 @@ const poll = {
 const pollRegisterNewAnswer = poll.registerNewAnswer.bind(poll);
 document
   .querySelector('.poll')
-  .addEventListener('click', pollRegisterNewAnswer);
+  .addEventListener('click', pollRegisterNewAnswer); //need to bind the registerNewAnswer function because in event handler, this keyword points to querySelector which is undefined
 
 //bonus
 // [5, 2, 3];
