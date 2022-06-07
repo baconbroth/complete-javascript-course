@@ -61,10 +61,12 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
-const displayMovements = function (movements) {
+const displayMovements = function (movements, sort = false) {
   containerMovements.innerHTML = ''; //emptying container
 
-  movements.forEach(function (mov, i) {
+  const movs = sort ? movements.slice().sort((a, b) => a - b) : movements; //using the slice() method here to create a copy of the movements array, since sorting mutates the array and we don't want to mutate the original movements array
+
+  movs.forEach(function (mov, i) {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
     const html = `
     <div class="movements__row">
@@ -78,34 +80,30 @@ const displayMovements = function (movements) {
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
-displayMovements(account1.movements);
 
-const calcDisplayBalance = movements => {
-  const balance = movements.reduce((acc, mov, i, arr) => acc + mov, 0);
-  labelBalance.textContent = `${balance}€`;
+const calcDisplayBalance = acc => {
+  acc.balance = acc.movements.reduce((acc, mov, i, arr) => acc + mov, 0);
+  labelBalance.textContent = `${acc.balance}€`;
 };
-calcDisplayBalance(account1.movements);
 
-const calcDisplaySummary = function (movements) {
-  const incomes = movements
+const calcDisplaySummary = function (acc) {
+  const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0);
   labelSumIn.textContent = `${incomes}€`;
 
-  const out = movements
+  const out = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + Math.abs(mov), 0);
   labelSumOut.textContent = `${out}€`;
 
-  const interest = movements
+  const interest = acc.movements
     .filter(mov => mov > 0)
-    .map(deposit => 0.012 * deposit)
+    .map(deposit => (acc.interestRate / 100) * deposit)
     .filter((int, i, arr) => int >= 1) //bank has specific requirement that interest is only paid on deposit > 1
     .reduce((acc, int) => acc + int, 0);
   labelSumInterest.textContent = `${interest}€`;
 };
-
-calcDisplaySummary(account1.movements);
 
 const createUsernames = function (accs) {
   accs.forEach(function (acc) {
@@ -118,6 +116,94 @@ const createUsernames = function (accs) {
 };
 createUsernames(accounts);
 
+const updateUI = acc => {
+  // Display Movements
+  displayMovements(acc.movements);
+  // Display Balance
+  calcDisplayBalance(acc);
+  // Display Summary
+  calcDisplaySummary(acc);
+};
+
+//Event Handler
+let currentAccount;
+
+btnLogin.addEventListener('click', function (e) {
+  //prevent form from submitting
+  e.preventDefault();
+  currentAccount = accounts.find(
+    acc => acc.username === inputLoginUsername.value
+  );
+
+  if (currentAccount?.pin === Number(inputLoginPin.value)) {
+    // Clear input fields
+    inputLoginUsername.value = inputLoginPin.value = '';
+    inputLoginPin.blur();
+    // Display UI and Welcome Message
+    labelWelcome.textContent = `Welcome back, ${
+      currentAccount.owner.split(' ')[0]
+    }`;
+    containerApp.style.opacity = 100;
+    updateUI(currentAccount);
+  }
+});
+
+btnTransfer.addEventListener('click', function (e) {
+  e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const receiverAcc = accounts.find(
+    acc => acc.username === inputTransferTo.value
+  );
+  inputTransferAmount.value = inputTransferTo.value = '';
+
+  if (
+    amount > 0 &&
+    receiverAcc &&
+    currentAccount.balance >= amount &&
+    receiverAcc?.username !== currentAccount.username
+  ) {
+    currentAccount.movements.push(-amount);
+    receiverAcc.movements.push(amount);
+
+    updateUI(currentAccount);
+  }
+});
+
+btnLoan.addEventListener('click', function (e) {
+  e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  if (amount > 0 && currentAmount.movements.some(mov => mov >= 0.1 * amount)) {
+    currentAmount.movements.push(amount);
+    updateUI(currentAccount);
+    inputLoanAmount.value = '';
+  }
+});
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    const index = accounts.findIndex(
+      acc => acc.username === currentAccount.username
+    );
+    accounts.splice(index, 1);
+
+    // Hide UI
+    containerApp.style.opacity = 0;
+  }
+
+  inputCloseUsername.value = inputClosePin.value = '';
+});
+
+let sorted = false;
+btnSort.addEventListener('click', function (e) {
+  e.preventDefault();
+  displayMovements(currentAccount.movements, !sorted);
+  sorted = !sorted; //this allows us to sort/desort the movements
+});
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
@@ -197,5 +283,99 @@ const totalDepositsUSD = movements
     return mov * eurToUsd;
   })
   .reduce((acc, mov) => acc + mov, 0);
+
+const firstWithdrawal = movements.find(mov => mov < 0);
+
+const account = accounts.find(acc => acc.owner === 'Jessica Davis');
+
+const anyDeposits = movements.some(mov => mov > 0);
+
+
+//every method
+movements.every(mov => mov > 0);
+
+const arr = [[1, 2, 3], [4, 5, 6], 7, 8];
+console.log(arr.flat());
+
+const arrDeep = [[[1, 2], 3], [4, [5, 6]], 7, 8];
+arrDeep.flat();
+arrDeep.flat(2);
+
+const accountMovements = accounts.map(acc => acc.movements);
+const allMovements = accountMovements.flat();
+//const overallBalance = allMovements.reduce((acc, mov) => acc + mov, 0);
+//chaining the above
+const overallBalance = accounts
+  .map(acc => acc.movements)
+  .flat()
+  .reduce((acc, mov) => acc + mov, 0);
+
+const overallBalance2 = accounts
+  .flatMap(acc => acc.movements)
+  .reduce((acc, mov) => acc + mov, 0);
+
+
+const owners = ['Jonas', 'Zach', 'Adam', 'Martha'];
+console.log(owners.sort());
+
+movements.sort((a, b) => {
+  if (a > b) {
+    return 1;
+  } else if (b > a) {
+    return -1;
+  }
+});
 */
+const y = Array.from({ length: 7 }, () => 1);
+
+const z = Array.from({ length: 7 }, (cur, i) => i + 1); //like calling map method on an empty array
+
+const randomDice = Array.from({ length: 100 }, () =>
+  Math.floor(Math.random() * 6)
+);
+console.log(randomDice);
+
+labelBalance.addEventListener('click', function () {
+  const movementsUI = Array.from(
+    document.querySelectorAll('.movements__value'),
+    el => Number(el.textContent.replace('€', ''))
+  );
+});
+
+const bankDepositSum = accounts
+  .flatMap(acc => acc.movements)
+  .filter(mov => mov > 0)
+  .reduce((sum, mov) => sum + mov, 0);
+
+const numDeposits1000 = accounts
+  .flatMap(acc => acc.movements)
+  .filter(mov => mov >= 1000).length;
+
+const numDeposits1000 = accounts
+  .flatMap(acc => acc.movements)
+  .reduce((count, cur) => (cur >= 1000 ? count + 1 : count), 0);
+
+const { deposits, withdrawals } = accounts
+  .flatMap(acc => acc.movements)
+  .reduce(
+    (sums, cur) => {
+      // cur > 0 ? (sums.deposits += cur) : (sums.withdrawals += cur);
+      sums[cur > 0 ? deposits : withdrawals] += cur;
+      return sums; //always need to return back the accumulator (sums)
+    },
+    { deposits: 0, withdrawals: 0 }
+  );
+
+const convertTitleCase = function (title) {
+  const exceptions = ['a', 'an', 'the', 'but', 'or', 'on', 'in', 'with'];
+
+  const titleCase = title
+    .toLowerCase()
+    .split(' ')
+    .map(word =>
+      exceptions.includes(word) ? word : word[0].toUpperCase() + word.slice(1)
+    )
+    .join(' ');
+  return titleCase[0].toUpperCase() + titleCase.slice(1);
+};
 /////////////////////////////////////////////////
